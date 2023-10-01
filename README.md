@@ -194,3 +194,87 @@ web development and turn to GUI development on desktop & mobile, say, one use `P
 
 ...
 
+
+
+### high class function
+
+Since python does not use curly braces for block definition, except for lambda syntax for small, simple functions, 
+developer has to define lower class function firstly and then construct higher ones. 
+
+For example, define async tasks with nested `group` and `gather`:
+
+```python
+
+import asyncio
+import time
+
+async def async_func1(delay, what):
+    await asyncio.sleep(delay)
+    print(what)
+
+async def async_func2(delay, what):
+    await asyncio.sleep(delay)
+    print(what)
+
+async def async_func3(delay, what):
+    await asyncio.sleep(delay)
+    print(what)
+
+async def async_func4(delay, what):
+    await asyncio.sleep(delay)
+    print(what)
+
+
+async with asyncio.TaskGroup() as tg0:
+    task1 = tg0.create_task(
+        async_func1(1, 'hello'))
+
+    task2 = tg0.create_task(
+        async_func2(2, 'world'))
+
+async with asyncio.TaskGroup() as tg1:
+    task1 = tg0.create_task(tg0)
+
+    task2 = tg0.create_task(
+        async_func3(2, 'world'))
+
+
+async def main():
+    await asyncio.gather(
+        tg1(),
+        async_func4(2, 'world'))
+    )
+```
+
+with `trailing method`, one can rewrite as:
+
+```python
+import asyncio
+import inspect
+
+class TaskGroup(...):
+    ...
+    def __trailing__(self, *trailer_args, **local_var_kwargs):
+        for trailer in trailer_args:
+            if inspect.iscoroutine(trailer):
+                self.create_task(trailer)
+
+        for var_name in local_var_kwargs:
+            var_value = local_var_kwargs[var_name]
+
+            if inspect.iscoroutine(trailer):
+                self.create_task(trailer)
+
+
+async def main():
+    async asyncio.gather():
+    
+        async asyncio.TaskGroup():
+            async_func1(1, 'hello'):pass
+            async_func2(2, 'world'):pass
+    
+            async asyncio.TaskGroup():
+            async_func3(2, 'world')
+
+        async_func4(2, 'world')
+```
