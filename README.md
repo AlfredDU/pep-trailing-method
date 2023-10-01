@@ -278,3 +278,116 @@ async def main():
 
         async_func4(2, 'world')
 ```
+
+
+### create DSL
+
+`Trailing method` makes it easy to create DSL with native python.
+Think about the SQL statement on data table `demo_table`:
+
+```sql
+select column1, UDF1(column1, column2) as new_column1 from demo_table
+    where (column1 = value1 and column2 = value2) or column3 = value3
+```
+
+Use python with `trailing method` syntax:
+
+```python
+import inspect
+import pandas as pd
+
+
+class DataFrame(...):
+    ...
+
+    def __trailing__(self, *trailer_args, **local_var_kwargs):
+        for trailer in trailer_args:
+            union_indices = []
+            if isinstance(trailer, pd.Index):
+                union_indices.append(trailer)
+                
+        self = self[pd.union(union_indices)]
+
+        for var_name in local_var_kwargs:
+            var_value = local_var_kwargs[var_name]
+
+            if inspect.isfunction(trailer) and len(inspect.signature(trailer).parameters) == 1:
+                func_name, func = var_name, var_value
+                self[func_name] = self.apply(func, axis=1)
+
+
+df = pd.read_table('demo_table', conn):
+
+def new_column1(row: pd.Series):
+    column1 = row['column1']
+    column2 = row['column2']
+    ...
+    return ...
+
+
+(df['column1'] == value1):
+df['column2'] == value2
+
+(df['column3'] == value3):
+pass
+```
+
+
+### created references ORM instances
+
+Think about the official tutorial of `Django ORM`:
+
+```python
+
+from django.db import models
+
+
+class Publication(models.Model):
+    title = models.CharField(max_length=30)
+
+
+class Article(models.Model):
+    headline = models.CharField(max_length=100)
+    publications = models.ManyToManyField(Publication)
+
+```
+
+Normal codes to create manytomany objects:
+
+```python
+p1 = Publication(title="The Python Journal")
+p1.save()
+p2 = Publication(title="Science News")
+p2.save()
+p3 = Publication(title="Science Weekly")
+p3.save()
+
+
+a1 = Article(headline="Django lets you build web apps easily")
+a1.save()
+
+a1.publications.add(p1)
+a1.publications.add(p2)
+a1.publications.add(p3)
+```
+
+Now with `trailing method`, there is a more clear code:
+
+```python
+
+class Article(models.Model):
+    ...
+    def __trailing__(self, \, *trailer_args: Tuple[Publication]):
+        self.save()
+        
+        for trailer in trailer_args:
+            if isinstance(trailer, Publication):
+                trailer.save()
+                a1.publications.add(trailer)
+
+
+Article(headline="Django lets you build web apps easily"):
+    Publication(title="The Python Journal"):pass
+    Publication(title="Science News"):pass
+    Publication(title="Science Weekly"):pass
+```
